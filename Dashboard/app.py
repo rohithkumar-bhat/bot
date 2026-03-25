@@ -27,7 +27,6 @@ def extract_excel_data(file_path):
 
     wb = openpyxl.load_workbook(file_path, data_only=True)
 
-    # ✅ Safe sheet access
     if "Sheet1" not in wb.sheetnames:
         return []
 
@@ -49,7 +48,6 @@ def extract_excel_data(file_path):
 
     employees = []
     for row in data_rows:
-        # ✅ Prevent index errors
         if len(row) < 3 or not row[1] or not row[2]:
             continue
 
@@ -64,7 +62,7 @@ def extract_excel_data(file_path):
 
 
 # -----------------------------
-# API
+# API Route
 # -----------------------------
 @app.get("/api/data")
 async def get_attendance_data():
@@ -74,10 +72,12 @@ async def get_attendance_data():
     return data
 
 
-# ✅ FIX: allow HEAD request (Render health check)
+# -----------------------------
+# Root (FIXED)
+# -----------------------------
 @app.api_route("/", methods=["GET", "HEAD"])
 async def read_index():
-    file_path = os.path.join(BASE_DIR, "index.html")
+    file_path = os.path.join(BASE_DIR, "static", "index.html")
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=500, detail="index.html not found")
@@ -85,7 +85,9 @@ async def read_index():
     return FileResponse(file_path)
 
 
-# ✅ Serve static files correctly
+# -----------------------------
+# Static Files (FIXED)
+# -----------------------------
 app.mount(
     "/static",
     StaticFiles(directory=os.path.join(BASE_DIR, "static")),
@@ -94,7 +96,7 @@ app.mount(
 
 
 # -----------------------------
-# Local dev only
+# Local Run Only
 # -----------------------------
 if __name__ == "__main__":
     import uvicorn
