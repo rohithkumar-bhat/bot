@@ -29,6 +29,7 @@ async function initDashboard() {
         
         // Find Top Performer
         const topEmp = employees.reduce((prev, current) => (parseFloat(prev.Percentage) > parseFloat(current.Percentage)) ? prev : current);
+        const topEmpId = topEmp['Employee ID'];
         const topName = topEmp['Employee Name'] || 'Employee';
         document.querySelector('#top-perf .card-value').textContent = topName.split(' ')[0];
 
@@ -39,47 +40,81 @@ async function initDashboard() {
         renderTable(employees);
         renderEmployeeDetails(employees);
         renderReports(employees);
+        renderLeaveRoster(employees);
 
         // 3. Setup Filters
         const searchInput = document.getElementById('employee-search');
-        const branchFilter = document.getElementById('branch-filter');
+        const departmentFilter = document.getElementById('department-filter');
         const attendanceFilter = document.getElementById('attendance-filter');
 
-        // Populate Branch Filter
-        const branches = [...new Set(employees.map(emp => emp.Branch))].filter(Boolean).sort();
-        branches.forEach(branch => {
+        // Populate Department Filter
+        const departments = [...new Set(employees.map(emp => emp.Branch))].filter(Boolean).sort();
+        departments.forEach(dept => {
             const option = document.createElement('option');
-            option.value = branch;
-            option.textContent = branch;
-            branchFilter.appendChild(option);
+            option.value = dept;
+            option.textContent = dept;
+            departmentFilter.appendChild(option);
         });
 
         const applyFilters = () => {
             const searchTerm = searchInput.value.toLowerCase();
-            const selectedBranch = branchFilter.value;
+            const selectedDept = departmentFilter.value;
             const selectedAttendance = attendanceFilter.value;
 
             const filtered = employees.filter(emp => {
                 const matchesSearch = emp['Employee Name'].toLowerCase().includes(searchTerm) || 
                                      emp['Employee ID'].toLowerCase().includes(searchTerm);
                 
-                const matchesBranch = selectedBranch === 'all' || emp.Branch === selectedBranch;
+                const matchesDept = selectedDept === 'all' || emp.Branch === selectedDept;
                 
                 const perc = parseFloat(emp.Percentage || 0);
                 let matchesAttendance = true;
-                if (selectedAttendance === 'excellent') matchesAttendance = perc > 90;
-                else if (selectedAttendance === 'good') matchesAttendance = perc >= 75 && perc <= 90;
+                if (selectedAttendance === 'excellent') matchesAttendance = perc >= 90;
+                else if (selectedAttendance === 'good') matchesAttendance = perc >= 75 && perc < 90;
                 else if (selectedAttendance === 'low') matchesAttendance = perc < 75;
 
-                return matchesSearch && matchesBranch && matchesAttendance;
+                return matchesSearch && matchesDept && matchesAttendance;
             });
 
             renderTable(filtered);
+            renderEmployeeDetails(filtered);
+            renderReports(filtered);
+            renderLeaveRoster(filtered);
+            
+            // Update counts if needed
+            document.getElementById('emp-count-badge').textContent = filtered.length;
         };
 
         searchInput.addEventListener('input', applyFilters);
-        branchFilter.addEventListener('change', applyFilters);
+        departmentFilter.addEventListener('change', applyFilters);
         attendanceFilter.addEventListener('change', applyFilters);
+        
+        // 4. Dashboard Shortcuts
+        document.getElementById('total-employees').style.cursor = 'pointer';
+        document.getElementById('total-employees').addEventListener('click', () => {
+            document.getElementById('nav-employees').click();
+        });
+        
+        document.getElementById('top-perf').style.cursor = 'pointer';
+        document.getElementById('top-perf').addEventListener('click', () => {
+            document.getElementById('nav-employees').click();
+            
+            // Highlight top performer after a tiny delay to ensure view is visible
+            setTimeout(() => {
+                const topCard = document.getElementById(`emp-card-${topEmpId}`);
+                if (topCard) {
+                    // Remove other highlights
+                    document.querySelectorAll('.employee-detail-card').forEach(c => c.classList.remove('highlight-top'));
+                    topCard.classList.add('highlight-top');
+                    topCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        });
+
+        document.getElementById('avg-attendance').style.cursor = 'pointer';
+        document.getElementById('avg-attendance').addEventListener('click', () => {
+            document.getElementById('nav-dashboard').click(); // Stays on dashboard but can be used for scroll if needed
+        });
 
         // 4. Setup Charts
         setupCharts(employees);
@@ -139,16 +174,34 @@ function renderTable(data) {
                 </div>
                 ${perc.toFixed(1)}%
             </td>
-            <td>
-                <span class="status-badge view">
-                    <span>P: <b>${daysPresent}</b></span>
-                    <span class="sep">|</span>
-                    <span>L: <b>${daysLeave}</b></span>
-                </span>
+            <td style="text-align: center;">
+                <button class="view-btn-new" data-emp-id="${emp['Employee ID']}" title="View Details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
             </td>
         `;
         listBody.appendChild(tr);
     });
+
+    // Add delegation listener once
+    if (!listBody.dataset.hasListener) {
+        listBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.view-btn-new');
+            if (btn) {
+                const empId = btn.dataset.empId;
+                document.getElementById('nav-employees').click();
+                setTimeout(() => {
+                    const card = document.getElementById(`emp-card-${empId}`);
+                    if (card) {
+                        document.querySelectorAll('.employee-detail-card').forEach(c => c.classList.remove('highlight-top'));
+                        card.classList.add('highlight-top'); // Using the same highlighter class
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
+        });
+        listBody.dataset.hasListener = 'true';
+    }
 }
 
 function setupCharts(data) {
@@ -158,29 +211,37 @@ function setupCharts(data) {
     const dailyCounts = dateKeys.map(date => {
         return data.filter(emp => {
             const status = emp[date];
-            // Present if it's a time string or not 'leave', 'NA', '--', 'SUNDAY'
             if (!status) return false;
             if (status === 'leave' || status === 'NA' || status === '--' || status === 'SUNDAY') return false;
             return true;
         }).length;
     });
 
+    const dailyLeaves = dateKeys.map(date => {
+        return data.filter(emp => emp[date] === 'leave').length;
+    });
+
     const trendCtx = document.getElementById('attendanceTrendChart').getContext('2d');
     new Chart(trendCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: dateKeys.map(d => d.split('-')[2]), // Just the day number
-            datasets: [{
-                label: 'Present Count',
-                data: dailyCounts,
-                borderColor: '#0f172a',
-                backgroundColor: 'rgba(15, 23, 42, 0.05)',
-                fill: true,
-                tension: 0.4,
-                borderWidth: 3,
-                pointRadius: 4,
-                pointBackgroundColor: '#0f172a'
-            }]
+            datasets: [
+                {
+                    label: 'Present Count',
+                    data: dailyCounts,
+                    backgroundColor: '#a78bfa',
+                    borderRadius: 6,
+                    maxBarThickness: 15
+                },
+                {
+                    label: 'Leaves Count',
+                    data: dailyLeaves,
+                    backgroundColor: '#fca5a5', // Soft Pastel Red
+                    borderRadius: 6,
+                    maxBarThickness: 15
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -221,7 +282,7 @@ function setupCharts(data) {
             labels: ['Present', 'Leave'],
             datasets: [{
                 data: [totalPresent, totalLeave],
-                backgroundColor: ['#2563eb', '#f59e0b'],
+                backgroundColor: ['#a78bfa', '#fca5a5'],
                 borderWidth: 0,
                 hoverOffset: 10
             }]
@@ -281,21 +342,24 @@ function renderEmployeeDetails(data) {
 
         const card = document.createElement('div');
         card.className = 'card employee-detail-card glass';
+        card.id = `emp-card-${emp['Employee ID']}`;
         card.innerHTML = `
             <div class="emp-detail-header">
+                <div class="emp-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>
                 <div>
                     <div class="emp-detail-name">${emp['Employee Name']}</div>
                     <div class="emp-detail-id">ID: ${emp['Employee ID']}</div>
                 </div>
-                <div class="badge">${emp['Branch']}</div>
             </div>
             <div class="emp-stats-row">
-                <div class="emp-stat-box">
-                    <span class="emp-stat-val">${p}</span>
+                <div class="emp-stat-box clickable-stat" data-emp-id="${emp['Employee ID']}" data-type="present" style="cursor: pointer;">
+                    <span class="emp-stat-val stat-present">${p}</span>
                     <span class="emp-stat-label">Present</span>
                 </div>
-                <div class="emp-stat-box">
-                    <span class="emp-stat-val">${l}</span>
+                <div class="emp-stat-box clickable-stat" data-emp-id="${emp['Employee ID']}" data-type="leave" style="cursor: pointer;">
+                    <span class="emp-stat-val stat-leave">${l}</span>
                     <span class="emp-stat-label">Leaves</span>
                 </div>
             </div>
@@ -311,6 +375,47 @@ function renderEmployeeDetails(data) {
         `;
         grid.appendChild(card);
     });
+
+    // Add Stat Box Listener once
+    if (!grid.dataset.hasListener) {
+        grid.addEventListener('click', (e) => {
+            const box = e.target.closest('.clickable-stat');
+            if (box) {
+                const empId = box.dataset.empId;
+                const type = box.dataset.type;
+                
+                // 1. Switch to Reports
+                document.getElementById('nav-reports').click();
+                
+                // 2. Highlight after render (delay for view switch animation)
+                setTimeout(() => {
+                    const row = document.getElementById(`report-row-${empId}`);
+                    if (row) {
+                        // Clear existing highlights
+                        document.querySelectorAll('.report-highlight').forEach(cell => cell.classList.remove('report-highlight', 'highlight-green', 'highlight-red'));
+                        document.querySelectorAll('.highlight-report-row').forEach(r => r.classList.remove('highlight-report-row'));
+                        
+                        // Highlight THE ENTIRE ROW
+                        row.classList.add('highlight-report-row');
+                        
+                        // Highlight matching cells specifically
+                        const cells = row.querySelectorAll('td');
+                        cells.forEach(cell => {
+                            const status = cell.dataset.status;
+                            if (type === 'present' && status !== 'leave' && status !== 'na' && status !== '--' && status !== 'sunday' && status !== '') {
+                                cell.classList.add('report-highlight', 'highlight-green');
+                            } else if (type === 'leave' && status === 'leave') {
+                                cell.classList.add('report-highlight', 'highlight-red');
+                            }
+                        });
+                        
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 300);
+            }
+        });
+        grid.dataset.hasListener = 'true';
+    }
 }
 
 function renderReports(data) {
@@ -329,12 +434,60 @@ function renderReports(data) {
     // Body
     let bodyHtml = '';
     data.forEach(emp => {
-        bodyHtml += '<tr>';
+        bodyHtml += `<tr id="report-row-${emp['Employee ID']}">`;
         keys.forEach(k => {
             const val = emp[k] || '';
-            bodyHtml += `<td>${val}</td>`;
+            let cls = '';
+            const lowerVal = val.toString().toLowerCase();
+            if (lowerVal === 'leave') cls = 'class="cell-leave"';
+            else if (lowerVal === 'na') cls = 'class="cell-na"';
+            
+            bodyHtml += `<td ${cls} data-status="${lowerVal}">${val}</td>`;
         });
         bodyHtml += '</tr>';
     });
     body.innerHTML = bodyHtml;
+}
+
+function renderLeaveRoster(data) {
+    const roster = document.getElementById('leave-roster');
+    if (!roster) return;
+    
+    // Get all calendar dates
+    const dateKeys = Object.keys(data[0]).filter(key => key.startsWith('2026-'));
+    
+    // Map dates to employees on leave
+    const leaveByDate = [];
+    dateKeys.forEach(date => {
+        const onLeave = data.filter(emp => {
+            const status = emp[date];
+            return status && status.toString().toLowerCase() === 'leave';
+        }).map(emp => emp['Employee Name']);
+        
+        if (onLeave.length > 0) {
+            leaveByDate.push({ date: date, names: onLeave });
+        }
+    });
+    
+    if (leaveByDate.length === 0) {
+        roster.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No leaves found for this period.</div>';
+        return;
+    }
+    
+    // Render
+    let html = '';
+    leaveByDate.forEach(item => {
+        const d = new Date(item.date);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        html += `
+            <div class="roster-date-group">
+                <div class="roster-date">${dateStr}</div>
+                <div class="roster-names">
+                    ${item.names.map(name => `<span class="roster-name-badge">${name}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    });
+    roster.innerHTML = html;
 }
