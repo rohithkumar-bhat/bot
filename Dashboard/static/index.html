@@ -19,15 +19,15 @@
                 <span>FRS</span>
             </div>
             <nav>
-                <a href="#" class="nav-item active">
+                <a href="#" class="nav-item active" id="nav-dashboard">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     Dashboard
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" id="nav-employees">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     Employees
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" id="nav-reports">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     Reports
                 </a>
@@ -43,7 +43,9 @@
 
         <!-- Main Content -->
         <main class="content">
-            <header class="top-nav glass">
+            <!-- Dashboard View -->
+            <section id="view-dashboard" class="dashboard-view active">
+                <header class="top-nav glass">
                 <div class="header-left">
                     <h1>Overview <span class="badge">Feb 2026</span></h1>
                     <p class="subtitle">Welcome back! Here's the attendance summary.</p>
@@ -98,6 +100,12 @@
                             <select id="branch-filter" class="glass-select">
                                 <option value="all">All Branches</option>
                             </select>
+                            <select id="attendance-filter" class="glass-select">
+                                <option value="all">All Scores</option>
+                                <option value="excellent">Excellent (>90%)</option>
+                                <option value="good">Good (75-90%)</option>
+                                <option value="low">Low (<75%)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="table-wrapper">
@@ -118,7 +126,40 @@
                         </table>
                     </div>
                 </div>
-            </div>
+                </div>
+            </section>
+
+            <!-- Employees View -->
+            <section id="view-employees" class="dashboard-view" style="display: none;">
+                <header class="top-nav glass">
+                    <div class="header-left">
+                        <h1>Employees <span class="badge" id="emp-count-badge">--</span></h1>
+                        <p class="subtitle">Complete employee directory and performance profiles.</p>
+                    </div>
+                </header>
+                <div class="employee-grid" id="employee-details-grid">
+                    <!-- Cards will be injected here -->
+                </div>
+            </section>
+
+            <!-- Reports View -->
+            <section id="view-reports" class="dashboard-view" style="display: none;">
+                <header class="top-nav glass">
+                    <div class="header-left">
+                        <h1>Attendance Reports</h1>
+                        <p class="subtitle">Exportable raw data and full attendance history.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.print()">Download PDF</button>
+                </header>
+                <div class="card table-card glass">
+                    <div class="table-wrapper">
+                        <table id="reports-table">
+                            <thead id="reports-head"></thead>
+                            <tbody id="reports-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
