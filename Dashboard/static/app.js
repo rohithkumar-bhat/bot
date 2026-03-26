@@ -1,180 +1,991 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EL FRS | Attendance Dashboard</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar glass">
-            <div class="logo">
-                <img src="/static/logo.png" alt="Entro Labs" style="width: 100%; height: auto; max-width: 160px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
-            </div>
-            <nav>
-                <a href="#" class="nav-item active" id="nav-dashboard">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    Dashboard
-                </a>
-                <a href="#" class="nav-item" id="nav-employees">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    Employees
-                </a>
-                <a href="#" class="nav-item" id="nav-reports">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    Reports
-                </a>
-            </nav>
-            <div class="user-profile">
-                <img src="/static/professional_avatar.png" alt="User Avatar">
-                <div class="user-info">
-                    <span class="user-name">HR @ entrolabs</span>
-                    <span class="user-role">HR Manager</span>
-                </div>
-            </div>
-        </aside>
+:root {
+    --primary: #a78bfa;               /* Soft Lavender */
+    --primary-hover: #8b5cf6;
+    --secondary: #93c5fd;             /* Soft Sky Blue */
+    --bg-dark: #fbfaff;               /* Very light Lavender tint */
+    --sidebar-dark: #ffffff;          /* Pure White Sidebar */
+    --text-main: #475569;             /* Slate Grey */
+    --text-muted: #94a3b8;
+    --glass-bg: rgba(255, 255, 255, 0.7); /* Translucent glass */
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px rgba(139, 92, 246, 0.05);
+    --accent-blue: #93c5fd;
+    --accent-green: #6ee7b7;
+    --accent-purple: #c084fc;
+    --accent-gold: #fbbf24;
+    --accent-rose: #fda4af;
+}
 
-        <!-- Main Content -->
-        <main class="content">
-            <!-- Dashboard View -->
-            <section id="view-dashboard" class="dashboard-view active">
-                <header class="top-nav glass">
-                <div class="header-left">
-                    <h1>Attendance <span class="badge">Feb 2026</span></h1>
-                    <p class="subtitle">Welcome back! Here's the attendance summary.</p>
-                </div>
-                <div class="header-right">
-                    <div class="search-bar glass">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" placeholder="Search employees..." id="employee-search">
-                    </div>
-                    <button class="btn btn-primary">Export CSV</button>
-                </div>
-            </header>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
 
-            <div class="dashboard-grid">
-                <!-- Stats Cards -->
-                <div class="card stat-card glass" id="total-days">
-                    <div class="card-icon blue">📅</div>
-                    <div class="card-value">28</div>
-                    <div class="card-label">Total Days</div>
-                </div>
-                <div class="card stat-card glass" id="avg-attendance">
-                    <div class="card-icon green">📊</div>
-                    <div class="card-value">--%</div>
-                    <div class="card-label">Avg. Attendance</div>
-                </div>
-                <div class="card stat-card glass" id="total-employees">
-                    <div class="card-icon purple">👥</div>
-                    <div class="card-value">--</div>
-                    <div class="card-label">Total Employees</div>
-                </div>
-                <div class="card stat-card glass" id="top-perf">
-                    <div class="card-icon gold">🏆</div>
-                    <div class="card-value">--</div>
-                    <div class="card-label">Top Performer</div>
-                </div>
+body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* Characteristic pastel top bar hint */
+    border-top: 4px solid var(--primary);
+}
 
-                <!-- Charts Section -->
-                <div class="card chart-card glass grid-span-2">
-                    <h3>Daily Attendance Trend</h3>
-                    <canvas id="attendanceTrendChart"></canvas>
-                </div>
-                <div class="card chart-card glass">
-                    <h3>Monthly Status</h3>
-                    <canvas id="statusDistChart"></canvas>
-                </div>
-                
-                <!-- NEW SECTION -->
-                <div class="card glass leave-roster-card">
-                    <h3>On Leave</h3>
-                    <div class="leave-roster-content" id="leave-roster">
-                        <!-- Dates and employee names will be injected here -->
-                    </div>
-                </div>
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
 
-                <!-- Table Section -->
-                <div class="card table-card glass grid-span-4">
-                    <div class="table-header">
-                        <h3>Detailed Attendance</h3>
-                        <div class="filters">
-                            <select id="department-filter" class="glass-select">
-                                <option value="all">All Departments</option>
-                            </select>
-                            <select id="attendance-filter" class="glass-select">
-                                <option value="all">All Scores</option>
-                                <option value="excellent">Excellent (>90%)</option>
-                                <option value="good">Good (75-90%)</option>
-                                <option value="low">Low (<75%)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="table-wrapper">
-                        <table id="employee-table">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>ID</th>
-                                    <th>Department</th>
-                                    <th>Attendance</th>
-                                    <th>Percentage</th>
-                                    <th style="text-align: center;">View Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employee-list">
-                                <!-- Data will be injected here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                </div>
-            </section>
+/* Glass Effect */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
 
-            <!-- Employees View -->
-            <section id="view-employees" class="dashboard-view" style="display: none;">
-                <header class="top-nav glass">
-                    <div class="header-left">
-                        <h1>Employees <span class="badge" id="emp-count-badge">--</span></h1>
-                        <p class="subtitle">Complete employee directory and performance profiles.</p>
-                    </div>
-                </header>
-                <div class="employee-grid" id="employee-details-grid">
-                    <!-- Cards will be injected here -->
-                </div>
-            </section>
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    z-index: 100;
+    background: var(--sidebar-dark);
+    border-right: 1px solid #f1f5f9;
+    color: var(--text-main);
+}
 
-            <!-- Reports View -->
-            <section id="view-reports" class="dashboard-view" style="display: none;">
-                <header class="top-nav glass">
-                    <div class="header-left">
-                        <h1>Attendance Reports</h1>
-                        <p class="subtitle">Exportable raw data and full attendance history.</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="window.print()">Download PDF</button>
-                </header>
-                <div class="card table-card glass">
-                    <div class="table-wrapper">
-                        <table id="reports-table">
-                            <thead id="reports-head"></thead>
-                            <tbody id="reports-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
+.logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+    padding: 0 0.5rem;
+}
 
-    <!-- Modals, etc. -->
-    <div id="loading-overlay">
-        <div class="loader"></div>
-    </div>
+nav {
+    flex: 1;
+}
 
-    <script src="/static/app.js"></script>
-</body>
-</html>
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-item svg {
+    width: 20px;
+    color: var(--primary); /* "Pop up" icon color */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item:hover svg {
+    transform: scale(1.25) rotate(5deg);
+    color: #00aeef; /* Vibrant Entro Blue */
+    filter: drop-shadow(0 0 12px rgba(0, 174, 239, 0.6));
+}
+
+.nav-item:hover, .nav-item.active {
+    background: #f5f3ff;
+    color: var(--primary);
+    transform: scale(1.02);
+}
+
+.nav-item.active {
+    background: var(--primary);
+    color: white !important;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.nav-item.active svg {
+    color: white !important;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.user-profile img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* Content */
+.content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem;
+    max-width: 1400px;
+}
+
+.dashboard-view {
+    display: none;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.dashboard-view.active {
+    display: block;
+}
+
+/* Top Nav */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+}
+
+.header-left h1 {
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.75rem;
+    background: #fff7ed;
+    border: 1px solid var(--primary);
+    border-radius: 20px;
+    color: var(--primary);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.header-right {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    width: 300px;
+}
+
+.search-bar svg {
+    width: 18px;
+    color: var(--text-muted);
+}
+
+.search-bar input {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    margin-left: 0.75rem;
+    outline: none;
+    width: 100%;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+}
+
+/* Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.grid-span-2 { grid-column: span 2; }
+.grid-span-3 { grid-column: span 3; }
+
+.card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Stat Cards */
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover .card-icon {
+    background: rgba(0, 174, 239, 0.1) !important;
+    transform: scale(1.1) rotate(5deg);
+}
+
+.card:hover .card-icon svg {
+    color: #00aeef !important;
+    filter: drop-shadow(0 0 10px rgba(0, 174, 239, 0.5));
+}
+
+.card-icon.blue { background: rgba(56, 189, 248, 0.2); border: 1px solid var(--accent-blue); }
+.card-icon.green { background: rgba(74, 222, 128, 0.2); border: 1px solid var(--accent-green); }
+.card-icon.purple { background: rgba(192, 132, 252, 0.2); border: 1px solid var(--accent-purple); }
+.card-icon.gold { background: rgba(251, 191, 36, 0.2); border: 1px solid var(--accent-gold); }
+
+.card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.card-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Chart Cards */
+.chart-card h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+    color: var(--text-main);
+}
+
+/* Table Card */
+.table-card {
+    padding: 2rem;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.glass-select {
+    background: white;
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.emp-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.emp-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.perc-bar-container {
+    width: 80px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+.perc-bar {
+    height: 100%;
+    background: var(--primary);
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge.view { 
+    background: rgba(15, 23, 42, 0.05); 
+    color: var(--primary);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    font-family: monospace;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.status-badge.view b { color: var(--text-main); font-weight: 700; }
+.status-badge.view .sep { opacity: 0.3; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card, .top-nav {
+    animation: fadeIn 0.8s ease backwards;
+}
+
+.app-container > aside {
+    animation: fadeIn 0.6s ease backwards;
+}
+
+/* Loading Overlay */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.5s ease;
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--primary);
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Employee Grid (Detailed) */
+.employee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.employee-detail-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.emp-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.emp-detail-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.emp-detail-id {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.emp-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.emp-stat-box {
+    background: rgba(15, 23, 42, 0.03);
+    padding: 0.75rem;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.emp-stat-val {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.emp-stat-val.stat-present {
+    color: #10b981; /* Green for Present */
+}
+
+.emp-stat-val.stat-leave {
+    color: #ef4444; /* Red for Leaves */
+}
+
+.employee-detail-card.highlight-top {
+    background: rgba(254, 240, 138, 0.4) !important; /* Soft Pastel Yellow */
+    border: 2px solid #facc15 !important;
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.4) !important;
+    transform: scale(1.05) translateY(-5px);
+}
+
+.emp-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emp-card-icon svg {
+    width: 20px;
+}
+
+.employee-detail-card:hover .emp-card-icon {
+    background: linear-gradient(135deg, #ffedd5, #bae6fd); /* Peach Blue Gradient */
+    color: #0088cc;
+    transform: scale(1.2) translateY(-2px);
+    box-shadow: 0 10px 20px rgba(186, 230, 253, 0.4);
+}
+
+.emp-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Reports Table Density */
+#reports-table {
+    font-size: 0.85rem;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#reports-table th {
+    background: #f5f3ff;
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem 0.75rem;
+    border: 1px solid #e2e8f0; /* Soft grid border */
+    border-bottom: 2px solid var(--primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: left;
+    white-space: nowrap;
+}
+
+#reports-table td {
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
+    border: 1px solid #e2e8f0; /* Soft grid border */
+}
+
+#reports-table .cell-leave {
+    background: #fee2e2 !important; /* Soft Pastel Red */
+    color: #991b1b;
+    font-weight: 600;
+}
+
+#reports-table .cell-na {
+    background: #fef9c3 !important; /* Soft Pastel Yellow */
+    color: #854d0e;
+    font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-span-3, .grid-span-2 { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+    .sidebar { width: 80px; padding: 1rem; }
+    .logo span, .user-info, .nav-item span { display: none; }
+    .content { margin-left: 80px; }
+    .top-nav { flex-direction: column; gap: 1rem; }
+    .search-bar { width: 100%; }
+}
+
+/* Premium Layout Refinements */
+.employee-detail-card .badge {
+    display: none; /* Hide department in individual cards as per request */
+}
+
+/* Status Badges */
+.status-badge-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+}
+
+.status-badge-new svg {
+    width: 12px;
+    height: 12px;
+}
+
+.status-badge-new.excellent {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge-new.good {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-badge-new.attention {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* View Details Button */
+.view-btn-new {
+    background: rgba(167, 139, 250, 0.1);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: var(--primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-btn-new svg {
+    width: 18px;
+    height: 18px;
+}
+
+.view-btn-new:hover {
+    background: linear-gradient(135deg, #ffedd5, #bae6fd); /* Peach Blue Gradient */
+    color: #0088cc;
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 5px 15px rgba(186, 230, 253, 0.4);
+}
+
+/* Report Highlighting */
+.report-highlight {
+    transition: background-color 0.5s ease;
+    font-weight: 700;
+}
+
+.highlight-green {
+    background-color: rgba(16, 185, 129, 0.3) !important;
+    color: #065f46 !important;
+    box-shadow: inset 0 0 0 1px #10b981;
+}
+
+.highlight-red {
+    border-radius: 12px;
+    text-align: center;
+}
+
+.emp-stat-val {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.emp-stat-val.stat-present {
+    color: #10b981; /* Green for Present */
+}
+
+.emp-stat-val.stat-leave {
+    color: #ef4444; /* Red for Leaves */
+}
+
+.employee-detail-card.highlight-top {
+    background: rgba(254, 240, 138, 0.4) !important; /* Soft Pastel Yellow */
+    border: 2px solid #facc15 !important;
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.4) !important;
+    transform: scale(1.05) translateY(-5px);
+}
+
+.emp-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emp-card-icon svg {
+    width: 20px;
+}
+
+.employee-detail-card:hover .emp-card-icon {
+    background: linear-gradient(135deg, #ffedd5, #bae6fd); /* Peach Blue Gradient */
+    color: #0088cc;
+    transform: scale(1.2) translateY(-2px);
+    box-shadow: 0 10px 20px rgba(186, 230, 253, 0.4);
+}
+
+.emp-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Reports Table Density */
+#reports-table {
+    font-size: 0.85rem;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#reports-table th {
+    background: #f5f3ff;
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem 0.75rem;
+    border: 1px solid #e2e8f0; /* Soft grid border */
+    border-bottom: 2px solid var(--primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: left;
+    white-space: nowrap;
+}
+
+#reports-table td {
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
+    border: 1px solid #e2e8f0; /* Soft grid border */
+}
+
+#reports-table .cell-leave {
+    background: #fee2e2 !important; /* Soft Pastel Red */
+    color: #991b1b;
+    font-weight: 600;
+}
+
+#reports-table .cell-na {
+    background: #fef9c3 !important; /* Soft Pastel Yellow */
+    color: #854d0e;
+    font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-span-3, .grid-span-2 { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+    .sidebar { width: 80px; padding: 1rem; }
+    .logo span, .user-info, .nav-item span { display: none; }
+    .content { margin-left: 80px; }
+    .top-nav { flex-direction: column; gap: 1rem; }
+    .search-bar { width: 100%; }
+}
+
+/* Premium Layout Refinements */
+.employee-detail-card .badge {
+    display: none; /* Hide department in individual cards as per request */
+}
+
+/* Status Badges */
+.status-badge-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+}
+
+.status-badge-new svg {
+    width: 12px;
+    height: 12px;
+}
+
+.status-badge-new.excellent {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge-new.good {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-badge-new.attention {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* View Details Button */
+.view-btn-new {
+    background: rgba(167, 139, 250, 0.1);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: var(--primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-btn-new svg {
+    width: 18px;
+    height: 18px;
+}
+
+.view-btn-new:hover {
+    background: linear-gradient(135deg, #ffedd5, #bae6fd); /* Peach Blue Gradient */
+    color: #0088cc;
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 5px 15px rgba(186, 230, 253, 0.4);
+}
+
+/* Report Highlighting */
+.report-highlight {
+    transition: background-color 0.5s ease;
+    font-weight: 700;
+}
+
+.highlight-green {
+    background-color: rgba(16, 185, 129, 0.3) !important;
+    color: #065f46 !important;
+    box-shadow: inset 0 0 0 1px #10b981;
+}
+
+.highlight-red {
+    background-color: rgba(239, 68, 68, 0.3) !important;
+    color: #991b1b !important;
+    box-shadow: inset 0 0 0 1px #ef4444;
+}
+
+/* Row Highlighting (3D Popout) */
+tr.highlight-report-row {
+    background: #ecfdf5 !important; /* Pastel Green */
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 15px 45px rgba(16, 185, 129, 0.25) !important;
+    transform: translateY(-5px);
+    position: relative;
+    z-index: 100;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+tr.highlight-report-row td {
+    border-top: 2px solid #10b981 !important;
+    border-bottom: 2px solid #10b981 !important;
+}
+
+tr.highlight-report-row td:first-child {
+    border-left: 2px solid #10b981 !important;
+    border-radius: 12px 0 0 12px;
+}
+
+tr.highlight-report-row td:last-child {
+    border-right: 2px solid #10b981 !important;
+    border-radius: 0 12px 12px 0;
+}
+
+/* Leave Roster Styles */
+.leave-roster-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.leave-roster-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    margin-top: 1rem;
+    max-height: 250px;
+}
+
+.roster-date-group {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed rgba(15, 23, 42, 0.1);
+}
+
+.roster-date-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.roster-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.roster-names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.roster-name-badge {
+    background: #fee2e2; /* Pastel Red */
+    color: #991b1b;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.grid-span-4 { grid-column: span 4; }
